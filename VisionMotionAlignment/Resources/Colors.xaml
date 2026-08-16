@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 主题色：与早期项目一致的蓝灰工业风 -->
+    <Color x:Key="PrimaryBrandColor">#3A6EA5</Color>
+    <Color x:Key="PrimaryBrandAccentColor">#2B5C8A</Color>
+
+    <!-- 状态色（技术协议要求：到位/故障/预警） -->
+    <Color x:Key="StatusNormalColor">#2EA043</Color>
+    <Color x:Key="StatusWarningColor">#D29922</Color>
+    <Color x:Key="StatusAlarmColor">#DA3633</Color>
+    <Color x:Key="StatusOfflineColor">#8B949E</Color>
+
+    <!-- 画布与叠加色（相机画面十字线叠加） -->
+    <Color x:Key="OverlayCrosshairColor">#FFD700</Color>
+    <Color x:Key="OverlayDetectedColor">#00E5FF</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrandBrush" Color="{StaticResource PrimaryBrandColor}" />
+    <SolidColorBrush x:Key="PrimaryBrandAccentBrush" Color="{StaticResource PrimaryBrandAccentColor}" />
+    <SolidColorBrush x:Key="StatusNormalBrush" Color="{StaticResource StatusNormalColor}" />
+    <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}" />
+    <SolidColorBrush x:Key="StatusAlarmBrush" Color="{StaticResource StatusAlarmColor}" />
+    <SolidColorBrush x:Key="StatusOfflineBrush" Color="{StaticResource StatusOfflineColor}" />
+    <SolidColorBrush x:Key="OverlayCrosshairBrush" Color="{StaticResource OverlayCrosshairColor}" />
+    <SolidColorBrush x:Key="OverlayDetectedBrush" Color="{StaticResource OverlayDetectedColor}" />
+
+</ResourceDictionary>

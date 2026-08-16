@@ -1,0 +1,168 @@
+* Blister pill inspection based on Halcon official example
+* Uses GMM classifier trained on reference image, then checks subsequent images.
+* This version inlines extract_pill_types / display_results / disp_continue_message, no external dependencies.
+
+dev_close_window ()
+read_image (Image, '../images/blister_mixed_reference')
+dev_open_window_fit_image (Image, 0, 0, -1, -1, WindowHandle)
+set_display_font (WindowHandle, 14, 'mono', 'true', 'false')
+dev_update_off ()
+dev_display (Image)
+dev_set_draw ('margin')
+
+* ============================================================
+* Inline extract_pill_types: extract blister board and chamber positions from reference
+* ============================================================
+dev_disp_text ('Train gmm classifier on pill types', 'window', 12, 12, 'black', [], [])
+
+threshold (Image, RefRegion, 90, 255)
+connection (RefRegion, RefConnected)
+select_shape (RefConnected, RefSelected, 'area', 'and', 5000, 999999)
+shape_trans (RefSelected, Blister, 'convex')
+
+gen_empty_obj (Chambers)
+for I := 0 to 4 by 1
+    Row := 107 + I * 70
+    for J := 0 to 2 by 1
+        Column := 177 + J * 150
+        gen_rectangle2 (Rectangle, Row, Column, 0, 64, 30)
+        concat_obj (Chambers, Rectangle, Chambers)
+    endfor
+endfor
+difference (Blister, Chambers, Pattern)
+union1 (Chambers, ChambersUnion)
+
+orientation_region (Blister, PhiRef)
+PhiRef := rad(180) + PhiRef
+area_center (Blister, AreaRef, RowRef, ColumnRef)
+
+* Split 15 chambers into 3 classes by row, then extract pill pixels precisely via color channels
+select_shape (Chambers, PillType1, 'row', 'and', 1, 145)
+union1 (PillType1, PillType1)
+select_shape (Chambers, PillType2, 'row', 'and', 145, 270)
+union1 (PillType2, PillType2)
+select_shape (Chambers, PillType3, 'row', 'and', 270, 390)
+union1 (PillType3, PillType3)
+
+* Class 1 (yellow pills): B channel 60~95
+reduce_domain (Image, PillType1, RefImageReduced)
+decompose3 (RefImageReduced, RefR, RefG, RefB)
+threshold (RefB, YellowPills, 60, 95)
+
+* Class 2 (red pills): inverted B channel + hysteresis threshold
+reduce_domain (Image, PillType2, RefImageReduced)
+decompose3 (RefImageReduced, RefR, RefG, RefB)
+invert_image (RefB, RefBInvert)
+hysteresis_threshold (RefBInvert, RedPills, 190, 200, 5)
+
+* Class 3 (green pills): inverted B channel + hysteresis threshold
+reduce_domain (Image, PillType3, RefImageReduced)
+decompose3 (RefImageReduced, RefR, RefG, RefB)
+invert_image (RefB, RefBInvert)
+hysteresis_threshold (RefBInvert, GreenPills, 180, 200, 10)
+
+intersection (YellowPills, PillType1, PillType1)
+intersection (RedPills, PillType2, PillType2)
+intersection (GreenPills, PillType3, PillType3)
+PillTypeCount := [3, 6, 6]
+concat_obj (PillType1, PillType2, Classes)
+concat_obj (Classes, PillType3, Classes)
+
+* ============================================================
+* Train GMM classifier
+* ============================================================
+NumClasses := |PillTypeCount|
+create_class_gmm (3, 3, [1, 5], 'spherical', 'normalization', 10, 42, GMMHandle)
+add_samples_image_class_gmm (Image, Classes, GMMHandle, 0)
+train_class_gmm (GMMHandle, 100, 0.001, 'training', 0.0001, Centers, Iter)
+
+* ============================================================
+* Inspect subsequent 12 blister images
+* ============================================================
+Count := 12
+for FileIndex := 1 to Count by 1
+    read_image (Image, '../images/blister_mixed_' + FileIndex$'02')
+
+    threshold (Image, Region, 90, 255)
+    connection (Region, ConnectedRegions)
+    select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 5000, 9999999)
+    shape_trans (SelectedRegions, RegionTrans, 'convex')
+    orientation_region (RegionTrans, Phi)
+    if (abs(Phi) > rad(90))
+        Phi := rad(180) + Phi
+    endif
+    area_center (RegionTrans, Area1, Row, Column)
+    vector_angle_to_rigid (Row, Column, Phi, RowRef, ColumnRef, PhiRef, HomMat2D)
+    affine_trans_image (Image, ImageAffineTrans, HomMat2D, 'constant', 'false')
+    reduce_domain (ImageAffineTrans, ChambersUnion, ImageReduced)
+    decompose3 (ImageAffineTrans, ImageR, ImageG, ImageB)
+
+
+    classify_image_class_gmm (ImageReduced, ClassRegions, GMMHandle, 0.0005)
+
+    count_obj (ClassRegions, Number)
+    gen_empty_obj (FinalClasses)
+    connection (Chambers, ChambersRemaining)
+    for Index := Number to 1 by -1
+        dev_clear_window ()
+        select_obj (ClassRegions, Region, Index)
+        intersection (ChambersRemaining, Region, Region)
+        select_shape (Region, PillsOfOneType, ['area','width'], 'and', [200,40], [3000,80])
+        difference (ChambersUnion, PillsOfOneType, RegionDifference)
+        connection (RegionDifference, ConnectedRegions)
+        select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 0, 7868)
+        shape_trans (SelectedRegions, SelectedRegions, 'convex')
+        union1 (SelectedRegions, SelectedRegions)
+        difference (ChambersRemaining, SelectedRegions, ChambersRemaining)
+        concat_obj (SelectedRegions, FinalClasses, FinalClasses)
+    endfor
+
+
+    gen_empty_obj (MissingPills)
+    gen_empty_obj (WrongPills)
+    gen_empty_obj (WrongNumberOfPills)
+    difference (ChambersUnion, FinalClasses, LeftOvers)
+    area_center (LeftOvers, Area, Row1, Column1)
+    if (Area > 0)
+        connection (LeftOvers, LeftOvers)
+        count_obj (LeftOvers, Number)
+        for Index := 1 to Number by 1
+            select_obj (LeftOvers, ObjectSelected, Index)
+            intensity (ObjectSelected, ImageB, Mean, Deviation)
+            if (Deviation > 40)
+                concat_obj (WrongPills, ObjectSelected, WrongPills)
+            else
+                concat_obj (MissingPills, ObjectSelected, MissingPills)
+            endif
+        endfor
+    endif
+
+
+    CountFinalClass := []
+    for Index := 1 to NumClasses by 1
+        select_obj (FinalClasses, ObjectSelected, Index)
+        connection (ObjectSelected, ObjectSelected)
+        count_obj (ObjectSelected, Size)
+        CountFinalClass := [CountFinalClass,Size]
+    endfor
+
+    * Inline display_results (simplified): show aligned image, classification results and statistics
+    dev_display (ImageAffineTrans)
+    dev_set_color ('green')
+    dev_display (FinalClasses)
+    dev_set_color ('red')
+    dev_display (WrongPills)
+    dev_set_color ('yellow')
+    dev_display (MissingPills)
+    dev_set_color ('black')
+    Report := 'Image ' + FileIndex + '/' + Count + '\nExpected: ' + PillTypeCount + '\nDetected: ' + CountFinalClass
+    dev_disp_text (Report, 'window', 12, 12, 'black', [], [])
+
+    * Inline disp_continue_message
+    if (FileIndex < Count)
+        dev_disp_text ('Press F5 to continue...', 'window', 450, 12, 'blue', [], [])
+    endif
+    stop ()
+endfor
+
+clear_class_gmm (GMMHandle)

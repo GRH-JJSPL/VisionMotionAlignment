@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <!-- 生成 XML 文档以支持 C1 注释规范（可读性） -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- 抑制公共 API 缺失文档的告警噪音，保留 error 级 -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UI 框架（Win11 风格，与早期项目一致） -->
+    <PackageReference Include="WPF-UI" Version="4.0.0" />
+    <!-- MVVM -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- 依赖注入 + Generic Host -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <!-- 日志 -->
+    <PackageReference Include="Serilog" Version="4.0.2" />
+    <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <!-- 串口（力值 Modbus RTU；运动控制卡走 TCP） -->
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <!-- 图表（力值历史趋势曲线） -->
+    <PackageReference Include="ScottPlot.WPF" Version="5.1.58" />
+  </ItemGroup>
+
+  <!-- 运动控制卡：固高 GTS 风格 TCP 客户端（MotionShared，已并入本仓库 src/MotionShared） -->
+  <ItemGroup>
+    <ProjectReference Include="..\src\MotionShared\MotionShared.csproj" />
+  </ItemGroup>
+
+  <!-- Halcon 视觉库：引用本机安装的 MVTec HALCON SDK（halcondotnet.dll）
+       通过 $(HALCONROOT) 环境变量定位，需预先安装 HALCON 24.11 并配置环境变量 -->
+  <ItemGroup>
+    <Reference Include="halcondotnet">
+      <HintPath>$(HALCONROOT)\bin\dotnet35\halcondotnet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <!-- halcondotnet (dotnet35) 依赖 System.Drawing，WPF XAML 编译时需能解析该程序集 -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- appsettings.json 复制到输出目录，运行时供 Generic Host 加载（R5: optional=true 容错） -->
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

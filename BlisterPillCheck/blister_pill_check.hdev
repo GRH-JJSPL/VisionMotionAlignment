@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="24.11.1.0">
+<procedure name="main">
+<interface/>
+<body>
+<c>* Blister pill inspection based on Halcon official example</c>
+<c>* Uses GMM classifier trained on reference image, then checks subsequent images.</c>
+<c>* This version inlines extract_pill_types / display_results / disp_continue_message, no external dependencies.</c>
+<c></c>
+<l>dev_close_window ()</l>
+<l>read_image (Image, '../images/blister_mixed_reference')</l>
+<l>dev_open_window_fit_image (Image, 0, 0, -1, -1, WindowHandle)</l>
+<l>set_display_font (WindowHandle, 14, 'mono', 'true', 'false')</l>
+<l>dev_update_off ()</l>
+<l>dev_display (Image)</l>
+<l>dev_set_draw ('margin')</l>
+<c></c>
+<c>* ============================================================</c>
+<c>* Inline extract_pill_types: extract blister board and chamber positions from reference</c>
+<c>* ============================================================</c>
+<l>dev_disp_text ('Train gmm classifier on pill types', 'window', 12, 12, 'black', [], [])</l>
+<c>*提取图片药板中不包含那半截药丸的区域（注：黄色药丸也被当成了药板区域）</c>
+<l>threshold (Image, RefRegion, 90, 255)</l>
+<l>connection (RefRegion, RefConnected)</l>
+<c>*根据area，去除噪声</c>
+<l>select_shape (RefConnected, RefSelected, 'area', 'and', 5000, 999999)</l>
+<c>*填补凹陷</c>
+<l>shape_trans (RefSelected, Blister, 'convex')</l>
+<c>*画十五个矩形区域塞进Chambers中</c>
+<l>gen_empty_obj (Chambers)</l>
+<l>for I := 0 to 4 by 1</l>
+<l>    Row := 107 + I * 70</l>
+<l>    for J := 0 to 2 by 1</l>
+<l>        Column := 177 + J * 150</l>
+<l>        gen_rectangle2 (Rectangle, Row, Column, 0, 64, 30)</l>
+<l>        concat_obj (Chambers, Rectangle, Chambers)</l>
+<l>    endfor</l>
+<l>endfor</l>
+<c>*Pattern为填补凹陷后的药板减去十五个矩形区域</c>
+<l>difference (Blister, Chambers, Pattern)</l>
+<l>union1 (Chambers, ChambersUnion)</l>
+<c>*获取药板的角度</c>
+<l>orientation_region (Blister, PhiRef)</l>
+<c>*PhiRef返回的是-90°~90°，需要变为0°~180°</c>
+<l>PhiRef := rad(180) + PhiRef</l>
+<c>*获取药板的中心坐标</c>
+<l>area_center (Blister, AreaRef, RowRef, ColumnRef)</l>
+<c></c>
+<c>*此为训练阶段，第一行药丸为黄色，第二行红色，第三行为绿色，这是一定的</c>
+<c>*PillType1为黄色药丸，PillType2为红色药丸，PillType3为绿色药丸矩形区域（整个）</c>
+<l>select_shape (Chambers, PillType1, 'row', 'and', 1, 145)</l>
+<l>union1 (PillType1, PillType1)</l>
+<l>select_shape (Chambers, PillType2, 'row', 'and', 145, 270)</l>
+<l>union1 (PillType2, PillType2)</l>
+<l>select_shape (Chambers, PillType3, 'row', 'and', 270, 390)</l>
+<l>union1 (PillType3, PillType3)</l>
+<c></c>
+<c></c>
+<c>*拿拿分解后的blue色图做阈值分割，因为黄色药丸主要是红色和绿色多，蓝色少，</c>
+<c>*因为背景是白色的，红绿蓝都高，我们必须选在三原色图低的</c>
+<c>*RefImageReduced为只有黄色药丸的矩形药丸图，注意了，是矩形药丸图，PillType1为纯色矩形</c>
+<c>*reduce_domain 作用为把image的PillType1矩形区域里的图片内容剪裁出来，得到矩形药丸图</c>
+<c>* Class 1 (yellow pills): B channel 60~95</c>
+<l>reduce_domain (Image, PillType1, RefImageReduced)</l>
+<l>decompose3 (RefImageReduced, RefR, RefG, RefB)</l>
+<l>threshold (RefB, YellowPills, 60, 95)</l>
+<c></c>
+<c></c>
+<c>*红色药丸在G图灰度值高，其他的低，但是可能也存在黑色，所以我们选择Blue图，至于如何去除黑色的影响，靠hysteresis_threshold （延迟阈值）</c>
+<c>* Class 2 (red pills): inverted B channel + hysteresis threshold</c>
+<l>reduce_domain (Image, PillType2, RefImageReduced)</l>
+<l>decompose3 (RefImageReduced, RefR, RefG, RefB)</l>
+<c>*逆转图像灰度值，255-current</c>
+<l>invert_image (RefB, RefBInvert)</l>
+<c>*原理，取灰度值&gt;=200的作为种子，向外生长，把&gt;190的合并，最终结果像素数小于5的区域移除</c>
+<l>hysteresis_threshold (RefBInvert, RedPills, 190, 200, 5)</l>
+<c></c>
+<c>*和Class2一样的原因，并Class2和3都可以使用Gren图</c>
+<c>* Class 3 (green pills): inverted B channel + hysteresis threshold</c>
+<l>reduce_domain (Image, PillType3, RefImageReduced)</l>
+<l>decompose3 (RefImageReduced, RefR, RefG, RefB)</l>
+<l>invert_image (RefB, RefBInvert)</l>
+<l>hysteresis_threshold (RefBInvert, GreenPills, 180, 200, 10)</l>
+<c></c>
+<c>*PillType1为黄色药丸的矩形，YellowPills为那半截有颜色的药丸，此处作用为取交集，个人认为没意义</c>
+<c>*此句之后，PillType变为提取出来的药丸颜色部分坐标值（！！！！！！！！）</c>
+<c>*因为YellowPills就是从</c>
+<l>intersection (YellowPills, PillType1, PillType1)</l>
+<l>intersection (RedPills, PillType2, PillType2)</l>
+<l>intersection (GreenPills, PillType3, PillType3)</l>
+<c>*药丸期望数量</c>
+<l>PillTypeCount := [3, 6, 6]</l>
+<c>*将所有的药丸颜色放入Classes，根据颜色分类，给GMM训练</c>
+<l>concat_obj (PillType1, PillType2, Classes)</l>
+<l>concat_obj (Classes, PillType3, Classes)</l>
+<c></c>
+<c>* ============================================================</c>
+<c>* Train GMM classifier</c>
+<c>* ============================================================</c>
+<c></c>
+<c>*数组长度，代表着药丸颜色的数量</c>
+<l>NumClasses := |PillTypeCount|</l>
+<c>*创建GMM分类器，3为维数（RGB，3维），3为类别数（红绿蓝），[1,5]为[1,5,5]简写，代表着RGB的高斯分量数</c>
+<c>*因为高斯分布（正态分布）很集中，而颜色又可能不是很集中，有很多坨，一坨需要一个</c>
+<c>*'normalization'归一化，归一化后，有红绿黄0.0001，0.0001，0.0002变为0.25，0.25，0.5，所以才说三个概率加起来为1</c>
+<c>*检测时有原始概率来判定（使用GMM时会给定这个参数），当小于给定参数时，丢弃</c>
+<c>*10是高斯分量最大数，42为随机种子，训练的起始点，保证每次训练效果一致</c>
+<l>create_class_gmm (3, 3, [1, 5], 'spherical', 'normalization', 10, 42, GMMHandle)</l>
+<c>*Classes为颜色坐标，不包含颜色值，看到这个颜色 → 判断属于哪个类别（不看坐标）</c>
+<l>add_samples_image_class_gmm (Image, Classes, GMMHandle, 0)</l>
+<c></c>
+<c>*用之前 add_samples 填充的样本数据</c>
+<c>*每次取100个样本像素，反复优化高斯分量的参数，当变化小于 0.001 时停止，按训练数据的比例计算类别先验</c>
+<c>*0.0001（非零）为使用种子42保证可复现，Iter为实际迭代次数，Centers为高斯中心点，如黄色像素都在黄色高斯中心点分布</c>
+<l>train_class_gmm (GMMHandle, 100, 0.001, 'training', 0.0001, Centers, Iter)</l>
+<c></c>
+<c>* ============================================================</c>
+<c>* Inspect subsequent 12 blister images</c>
+<c>* ============================================================</c>
+<l>Count := 12</l>
+<l>for FileIndex := 1 to Count by 1</l>
+<l>    read_image (Image, '../images/blister_mixed_' + FileIndex$'02')</l>
+<c></c>
+<l>    threshold (Image, Region, 90, 255)</l>
+<l>    connection (Region, ConnectedRegions)</l>
+<l>    select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 5000, 9999999)</l>
+<l>    shape_trans (SelectedRegions, RegionTrans, 'convex')</l>
+<l>    orientation_region (RegionTrans, Phi)</l>
+<l>    if (abs(Phi) &gt; rad(90))</l>
+<l>        Phi := rad(180) + Phi</l>
+<l>    endif</l>
+<c>    *位置修正</c>
+<l>    area_center (RegionTrans, Area1, Row, Column)</l>
+<l>    vector_angle_to_rigid (Row, Column, Phi, RowRef, ColumnRef, PhiRef, HomMat2D)</l>
+<l>    affine_trans_image (Image, ImageAffineTrans, HomMat2D, 'constant', 'false')</l>
+<c>    *位置修正完成</c>
+<c>    </c>
+<c>    *将训练时确定的矩形放入修正的图片，并将区域裁剪出来</c>
+<l>    reduce_domain (ImageAffineTrans, ChambersUnion, ImageReduced)</l>
+<l>    decompose3 (ImageAffineTrans, ImageR, ImageG, ImageB)</l>
+<c></c>
+<c>    *GMM分类器分类，并输出三个点集，红绿黄，每个区域代表着一个点集</c>
+<c>    *0.0005为拒绝概率，当原始概率小于0.0005时，丢弃该像素，所以这并不和红绿黄1概率加起来为1相冲突</c>
+<l>    classify_image_class_gmm (ImageReduced, ClassRegions, GMMHandle, 0.0005)</l>
+<c></c>
+<l>    count_obj (ClassRegions, Number)</l>
+<c>    *最终区域，</c>
+<l>    gen_empty_obj (FinalClasses)</l>
+<l>    connection (Chambers, ChambersRemaining)</l>
+<l>    for Index := Number to 1 by -1</l>
+<l>        dev_clear_window ()</l>
+<c>        *取区域点集，绿色——红色——黄色，取完绿色后，锁定绿色药丸矩形，然后从15个区域移除</c>
+<c>        *因为绿色和红色在其他药丸上分布特别少，可以过滤掉，所以用这个，黄色药丸点集在其他颜色药丸上都有分布，所以最后黄色</c>
+<l>        select_obj (ClassRegions, Region, Index)</l>
+<c>        *ChambersRemaining为剩余其余，词句作用是将GMM分类后的剩余像素显示在剩余区域，如果有像素在已过滤区域，则丢弃</c>
+<l>        intersection (ChambersRemaining, Region, Region)</l>
+<c>        *过滤</c>
+<l>        select_shape (Region, PillsOfOneType, ['area','width'], 'and', [200,40], [3000,80])</l>
+<c>        *除去此次药丸筛选到的区域，注意黄色与红色药丸只筛选红色那一半，黄色则是中间有两条竖矩形</c>
+<l>        difference (ChambersUnion, PillsOfOneType, RegionDifference)</l>
+<c>        *将剩余区域根据连通域分为多个对象</c>
+<l>        connection (RegionDifference, ConnectedRegions)</l>
+<c>        *此次满足筛选的药丸（比如红色）的区域，内部有空缺，所以面积稍小</c>
+<l>        select_shape (ConnectedRegions, SelectedRegions, 'area', 'and', 0, 7868)</l>
+<c>        *填补空洞</c>
+<l>        shape_trans (SelectedRegions, SelectedRegions, 'convex')</l>
+<c>        *组合区域，等会一次性去除这些已被筛选过的药丸</c>
+<l>        union1 (SelectedRegions, SelectedRegions)</l>
+<l>        difference (ChambersRemaining, SelectedRegions, ChambersRemaining)</l>
+<c>        * FinalClasses，将有红绿黄要完蛋的区域放入次区域集合中</c>
+<l>        concat_obj (SelectedRegions, FinalClasses, FinalClasses)</l>
+<l>    endfor</l>
+<c></c>
+<c></c>
+<l>    gen_empty_obj (MissingPills)</l>
+<l>    gen_empty_obj (WrongPills)</l>
+<l>    gen_empty_obj (WrongNumberOfPills)</l>
+<c>    *LeftOvers为缺药或者说没有红绿蓝药丸的矩形区域</c>
+<l>    difference (ChambersUnion, FinalClasses, LeftOvers)</l>
+<l>    area_center (LeftOvers, Area, Row1, Column1)</l>
+<l>    if (Area &gt; 0)</l>
+<l>        connection (LeftOvers, LeftOvers)</l>
+<l>        count_obj (LeftOvers, Number)</l>
+<c>        *遍历剩余矩形区域，若标准差大于40，则判定为错药，因为我们只筛选红绿黄像素（GMM筛选）</c>
+<c>        *所以其他颜色药丸并不会筛选出来</c>
+<l>        for Index := 1 to Number by 1</l>
+<l>            select_obj (LeftOvers, ObjectSelected, Index)</l>
+<l>            intensity (ObjectSelected, ImageB, Mean, Deviation)</l>
+<l>            if (Deviation &gt; 40)</l>
+<l>                concat_obj (WrongPills, ObjectSelected, WrongPills)</l>
+<l>            else</l>
+<l>                concat_obj (MissingPills, ObjectSelected, MissingPills)</l>
+<l>            endif</l>
+<l>        endfor</l>
+<l>    endif</l>
+<c></c>
+<c></c>
+<l>    CountFinalClass := []</l>
+<c>    *计算各个颜色区域的数量，FinalClasses为Union后的集合</c>
+<l>    for Index := 1 to NumClasses by 1</l>
+<l>        select_obj (FinalClasses, ObjectSelected, Index)</l>
+<l>        connection (ObjectSelected, ObjectSelected)</l>
+<l>        count_obj (ObjectSelected, Size)</l>
+<l>        CountFinalClass := [CountFinalClass,Size]</l>
+<l>    endfor</l>
+<c></c>
+<c>    * Inline display_results (simplified): show aligned image, classification results and statistics</c>
+<l>    dev_display (ImageAffineTrans)</l>
+<l>    dev_set_color ('green')</l>
+<l>    dev_display (FinalClasses)</l>
+<l>    dev_set_color ('red')</l>
+<l>    dev_display (WrongPills)</l>
+<l>    dev_set_color ('yellow')</l>
+<l>    dev_display (MissingPills)</l>
+<l>    dev_set_color ('black')</l>
+<l>    Report := 'Image ' + FileIndex + '/' + Count + '\nExpected: ' + PillTypeCount + '\nDetected: ' + CountFinalClass</l>
+<l>    dev_disp_text (Report, 'window', 12, 12, 'black', [], [])</l>
+<c></c>
+<c>    * Inline disp_continue_message</c>
+<l>    if (FileIndex &lt; Count)</l>
+<l>        dev_disp_text ('Press F5 to continue...', 'window', 450, 12, 'blue', [], [])</l>
+<l>    endif</l>
+<l>    stop ()</l>
+<l>endfor</l>
+<c></c>
+<l>clear_class_gmm (GMMHandle)</l>
+</body>
+<docu id="main">
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

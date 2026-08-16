@@ -1,0 +1,154 @@
+<UserControl x:Class="VisionMotionAlignment.Pages.BlisterCheckPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:halcon="clr-namespace:HalconDotNet;assembly=halcondotnet">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 页面标题 -->
+        <TextBlock Grid.Row="0"
+                   Text="泡罩药丸检测"
+                   Style="{StaticResource PageTitleTextBlock}" />
+
+        <!-- 内容区：左侧图像显示 + 右侧操作面板 -->
+        <Grid Grid.Row="1" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：Halcon 图像显示区（图像 + 结果叠加） -->
+            <Grid Grid.Column="0">
+                <Border Background="Black" CornerRadius="4">
+                    <Grid>
+                        <halcon:HSmartWindowControlWPF x:Name="HalconWindow" />
+                        <TextBlock Text="加载参考图训练后，选择测试图开始检测"
+                                   Foreground="#888"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   IsHitTestVisible="False" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- 右侧：操作面板 + 统计 + 历史 -->
+            <ScrollViewer Grid.Column="1" Width="360" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+                <StackPanel>
+
+                    <!-- 参考图训练 -->
+                    <ui:Card>
+                        <StackPanel>
+                            <TextBlock Text="参考图训练" Style="{StaticResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding TrainStatusText}"
+                                       Margin="0,8,0,2"
+                                       Style="{DynamicResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding ExpectedSummary}"
+                                       TextWrapping="Wrap" />
+                            <ui:Button Content="选择参考图并训练"
+                                       Command="{Binding LoadReferenceCommand}"
+                                       Appearance="Primary"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ui:Card>
+
+                    <!-- 纯视觉模式 -->
+                    <ui:Card Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="纯视觉模式（不驱动运动控制卡）"
+                                       Style="{StaticResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding CheckProgressText}"
+                                       Margin="0,8,0,2"
+                                       Style="{DynamicResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding CurrentFileName}"
+                                       TextWrapping="Wrap" />
+                            <ui:Button Content="选择测试图文件夹并检测"
+                                       Command="{Binding StartCheckCommand}"
+                                       Appearance="Primary"
+                                       Margin="0,8,0,0" />
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ui:Button Grid.Column="0"
+                                           Content="暂停"
+                                           Command="{Binding PauseCheckCommand}"
+                                           Margin="0,0,4,0" />
+                                <ui:Button Grid.Column="1"
+                                           Content="继续"
+                                           Command="{Binding ResumeCheckCommand}"
+                                           Margin="4,0,4,0" />
+                                <ui:Button Grid.Column="2"
+                                           Content="停止"
+                                           Command="{Binding StopCheckCommand}"
+                                           Appearance="Danger"
+                                           Margin="4,0,0,0" />
+                            </Grid>
+                        </StackPanel>
+                    </ui:Card>
+
+                    <!-- 联动模式 -->
+                    <ui:Card Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="联动模式（运动控制卡）"
+                                       Style="{StaticResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding MotionCardStatusText}"
+                                       Margin="0,8,0,2"
+                                       Style="{DynamicResource SectionTitleTextBlock}" />
+                            <ui:Button Content="单次联动（送料→检测→分拣）"
+                                       Command="{Binding StartOrchestrationCommand}"
+                                       Appearance="Primary"
+                                       Margin="0,8,0,0" />
+                            <ui:Button Content="紧急停止"
+                                       Command="{Binding EmergencyStopCommand}"
+                                       Appearance="Danger"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ui:Card>
+
+                    <!-- 结果统计 -->
+                    <ui:Card Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="检测结果" Style="{StaticResource SectionTitleTextBlock}" />
+                            <TextBlock Text="{Binding ResultStatusText}"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="{Binding ResultStatusBrush}"
+                                       Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding ResultDetailText}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ui:Card>
+
+                    <!-- 历史列表 -->
+                    <ui:Card Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock Text="历史记录" Style="{StaticResource SectionTitleTextBlock}" />
+                            <DataGrid ItemsSource="{Binding Results}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      HeadersVisibility="Column"
+                                      RowHeight="24"
+                                      MaxHeight="260"
+                                      Margin="0,8,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="文件" Binding="{Binding FileName}" Width="*" />
+                                    <DataGridTextColumn Header="结果" Binding="{Binding IsOk, StringFormat=OK;NG}" Width="50" />
+                                    <DataGridTextColumn Header="缺" Binding="{Binding MissingCount}" Width="40" />
+                                    <DataGridTextColumn Header="错" Binding="{Binding WrongCount}" Width="40" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </ui:Card>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

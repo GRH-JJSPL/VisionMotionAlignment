@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        控件模板集合。
+        状态徽章等依赖 Converter 的模板将在 Views 层创建 Converter 后补全
+        （见开发文档 10.9 可读性 C5：状态可视化）。
+    -->
+
+</ResourceDictionary>

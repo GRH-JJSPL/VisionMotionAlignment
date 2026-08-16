@@ -1,0 +1,55 @@
+## 编译产物
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio / Rider / VSCode 缓存
+.vs/
+.idea/
+.vscode/
+
+## 用户级设置与锁文件
+*.user
+*.suo
+*.userprefs
+*.lock.json
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## 测试结果
+TestResults/
+[Tt]est[Rr]esult*/
+
+## NuGet 包（保留 build 目标）
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## 日志
+*.log
+logs/
+
+## 临时与备份
+*.tmp
+*.bak
+*.cache
+
+## 操作系统
+Thumbs.db
+desktop.ini
+.DS_Store
+
+## HALCON SDK（商业软件，不提交 DLL）
+*.dll
+!**/bin/**/*.dll
+HALCONROOT/
+
+## 运行数据
+appsettings.Development.json
+
+## IDE / 编辑器
+*.suo
+*.user
+.idea/
+.vscode/

@@ -1,0 +1,42 @@
+﻿<UserControl x:Class="VisionMotionAlignment.Views.ForceValueCard"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="120" d:DesignWidth="240">
+    <!-- 力值卡片：固定左上角显示（技术协议要求） -->
+    <Border Style="{DynamicResource CardBorder}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- 上方“力值”标签 -->
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="力值"
+                       FontSize="13"
+                       Opacity="0.7"
+                       Margin="0,0,0,6" />
+
+            <!-- 中间大号力值数值（保留三位小数） -->
+            <TextBlock Grid.Row="1" Grid.Column="0"
+                       Style="{DynamicResource LargeValueTextBlock}"
+                       Text="{Binding ForceValue, StringFormat=F3}"
+                       VerticalAlignment="Bottom" />
+
+            <!-- 右侧力值单位 -->
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                       Text="{Binding ForceUnit}"
+                       FontSize="14"
+                       Opacity="0.7"
+                       VerticalAlignment="Bottom"
+                       Margin="6,0,0,0" />
+        </Grid>
+    </Border>
+</UserControl>

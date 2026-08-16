@@ -1,0 +1,44 @@
+﻿<Application x:Class="VisionMotionAlignment.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:VisionMotionAlignment"
+             xmlns:pages="clr-namespace:VisionMotionAlignment.Pages"
+             xmlns:vm="clr-namespace:VisionMotionAlignment.ViewModels.Pages"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!--
+        应用资源。MergedDictionaries 顺序：
+        1) WPF-UI 主题字典（Dark）+ 控件字典（提供 Fluent 风格基础控件样式）
+        2) 自定义 Colors/Styles/Templates（覆盖或补充 WPF-UI 默认值）
+        DataTemplate 段：将每个 Page ViewModel 类型映射到对应 Page（UserControl），
+        由 MainWindow 中的 ContentControl 根据 CurrentPage 自动渲染。
+        注意：移除 StartupUri，由 App.xaml.cs 通过 Generic Host 启动 MainWindow。
+    -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ControlsDictionary />
+                <ResourceDictionary Source="pack://application:,,,/Resources/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Resources/Styles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/Resources/Templates.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Page ViewModel → Page（UserControl）映射。Page 的 DataContext 由 ContentControl 自动设为对应 VM。 -->
+            <DataTemplate DataType="{x:Type vm:BlisterCheckPageViewModel}">
+                <pages:BlisterCheckPage />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CameraSettingPageViewModel}">
+                <pages:CameraSettingPage />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CommSettingPageViewModel}">
+                <pages:CommSettingPage />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ForceMonitorPageViewModel}">
+                <pages:ForceMonitorPage />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DiagnosticPageViewModel}">
+                <pages:DiagnosticPage />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

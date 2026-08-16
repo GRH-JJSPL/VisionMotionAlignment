@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 页面标题：统一字号字重 -->
+    <Style x:Key="PageTitleTextBlock" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- 区段标题 -->
+    <Style x:Key="SectionTitleTextBlock" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,8,0,6" />
+    </Style>
+
+    <!-- 卡片容器（力值卡片/状态卡片） -->
+    <Style x:Key="CardBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource ApplicationBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlElevationBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="12" />
+        <Setter Property="Margin" Value="4" />
+    </Style>
+
+    <!-- 大号数值显示（力值/坐标） -->
+    <Style x:Key="LargeValueTextBlock" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Courier New" />
+    </Style>
+
+    <!-- 等宽数值（寄存器/偏移量） -->
+    <Style x:Key="MonoValueTextBlock" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Courier New" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+</ResourceDictionary>
