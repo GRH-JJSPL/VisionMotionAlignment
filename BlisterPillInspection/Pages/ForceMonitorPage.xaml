@@ -1,0 +1,54 @@
+﻿<UserControl x:Class="BlisterPillInspection.Pages.ForceMonitorPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 页面标题 -->
+        <TextBlock Grid.Row="0"
+                   Text="力值监控"
+                   Style="{StaticResource PageTitleTextBlock}" />
+
+        <!-- 主体区域 -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- 大号数值显示 -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24">
+                <TextBlock Text="{Binding CurrentValue, StringFormat=F3}"
+                           Style="{StaticResource LargeValueTextBlock}" />
+                <TextBlock Text="{Binding Unit}"
+                           Style="{StaticResource LargeValueTextBlock}"
+                           Margin="8,0,0,0"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <!-- 力值历史趋势图（ScottPlot 实时曲线，code-behind 订阅 VM.History 刷新） -->
+            <Border Grid.Row="1" Style="{StaticResource CardBorder}">
+                <ScottPlot:WpfPlot x:Name="ForcePlot" />
+            </Border>
+        </Grid>
+
+        <!-- 底部按钮区 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+            <ui:Button Content="开始"
+                       Command="{Binding StartPollingCommand}"
+                       Appearance="Primary"
+                       Margin="0,0,8,0" />
+            <ui:Button Content="停止"
+                       Command="{Binding StopPollingCommand}"
+                       Margin="0,0,8,0" />
+            <ui:Button Content="清零"
+                       Command="{Binding ZeroCommand}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿# VisionMotionAlignment 泡罩药丸缺陷检测系统
+﻿# BlisterPillInspection 泡罩药丸缺陷检测系统
 
 > WPF .NET 8 上位机软件，基于 **HALCON GMM 分类器**实现泡罩药丸缺陷检测（缺药/错药），并用**固高 GTS 运动控制卡**做 3 轴送料/分拣闭环。
 > 项目由 HDevelop 官方 `blister` 示例提炼算法，重构为完整 MVVM 上位机工程。
@@ -100,7 +100,7 @@ GMM 只能识别黄/红/绿三类，三类之外的错药能框、三类之内�
 ## 目录结构
 
 ```
-VisionMotionAlignment/
+BlisterPillInspection/
 ├── Infrastructure/
 │   ├── DI/ServiceCollectionExtensions.cs   # DI 注册
 │   ├── Constants.cs                        # 全局常量（3 轴号/送料步进/拨杆行程/重连退避）
@@ -142,13 +142,13 @@ docs/                                        # 界面截图（检测结果 / 通
 
 ```powershell
 # 构建（需先安装 HALCON 并配置 HALCONROOT）
-dotnet build VisionMotionAlignment.sln
+dotnet build BlisterPillInspection.sln
 
 # 运行
-dotnet run --project VisionMotionAlignment/VisionMotionAlignment.csproj
+dotnet run --project BlisterPillInspection/BlisterPillInspection.csproj
 
 # 或直接运行编译产物
-.\VisionMotionAlignment\bin\Debug\net8.0-windows\VisionMotionAlignment.exe
+.\BlisterPillInspection\bin\Debug\net8.0-windows\BlisterPillInspection.exe
 ```
 
 > 应用启动时相机使用 Stub 占位（从 `images/` 模拟推送帧），UI 可正常加载与导航。运动控制卡服务默认连接 127.0.0.1:5000——**若没有真实控制卡或模拟器，启动时会自动回退到内置虚拟运动控制卡**（模拟 3 轴送料/分拣），联动模式开箱即用。

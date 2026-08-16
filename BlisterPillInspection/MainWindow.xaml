@@ -1,0 +1,182 @@
+﻿<ui:FluentWindow x:Class="BlisterPillInspection.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:views="clr-namespace:BlisterPillInspection.Views"
+                 xmlns:vm="clr-namespace:BlisterPillInspection.ViewModels"
+                 mc:Ignorable="d"
+                 d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+                 Title="视觉定位 + 运动控制卡系统"
+                 Width="1440" Height="900"
+                 MinWidth="1200" MinHeight="720"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 Background="{DynamicResource ApplicationBackgroundBrush}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶部标题栏 -->
+        <ui:TitleBar Grid.Row="0" Title="视觉定位 + 运动控制卡系统">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="Camera24" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <!-- 全局状态栏：运动控制卡状态 / 力值状态 / 力值卡片 / 系统就绪 / 时钟 -->
+        <Border Grid.Row="1"
+                Padding="16,8"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- 运动控制卡 标签 + 状态徽章 -->
+                <TextBlock Grid.Column="0"
+                           Text="运动控制卡"
+                           FontSize="13"
+                           Opacity="0.7"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0" />
+                <views:StatusBadge Grid.Column="1"
+                                   State="{Binding MotionCardConnectionState}" />
+
+                <!-- 力值模块 标签 + 状态徽章 -->
+                <TextBlock Grid.Column="3"
+                           Text="力值模块"
+                           FontSize="13"
+                           Opacity="0.7"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0" />
+                <views:StatusBadge Grid.Column="4"
+                                   State="{Binding ForceConnectionState}" />
+
+                <!-- 力值卡片（继承窗口 DataContext，绑定 ForceValue/ForceUnit） -->
+                <views:ForceValueCard Grid.Column="6"
+                                      Width="200" />
+
+                <!-- 系统就绪指示 -->
+                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="系统就绪："
+                               FontSize="13"
+                               Opacity="0.7"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0" />
+                    <Ellipse Width="12" Height="12" VerticalAlignment="Center">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{DynamicResource StatusOfflineBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSystemReady}" Value="True">
+                                        <Setter Property="Fill" Value="{DynamicResource StatusNormalBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                </StackPanel>
+
+                <!-- 当前时间 -->
+                <TextBlock Grid.Column="10"
+                           Text="{Binding CurrentDateTime}"
+                           FontSize="13"
+                           FontFamily="Consolas"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- 主内容区：左侧导航 + 右侧页面 -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧导航菜单 -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource ControlBackgroundBrush}"
+                    BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <ListBox ItemsSource="{Binding NavigationItems}"
+                         SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Padding="0,8">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="16,10" />
+                            <Setter Property="Margin" Value="8,2" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <!--
+                                导航项模板：
+                                - 默认：透明背景 + 主题前景色
+                                - 悬停：ControlSecondaryBrush（比默认略亮，暗示可点）
+                                - 选中：PrimaryBrandBrush 蓝灰主色 + 白色文字，与其余项形成明显对比
+                            -->
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="6"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Stretch"
+                                                              VerticalAlignment="Center"
+                                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background"
+                                                        Value="{DynamicResource ControlSecondaryBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="Background"
+                                                        Value="{DynamicResource PrimaryBrandBrush}" />
+                                                <Setter Property="Foreground" Value="White" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:NavigationItem}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:SymbolIcon Symbol="{Binding IconSymbol}" FontSize="18" />
+                                <TextBlock Text="{Binding Title}"
+                                           Margin="12,0,0,0"
+                                           FontSize="14"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <!-- 右侧页面内容（ContentControl 由 App.xaml 中 DataTemplate 渲染对应 Page） -->
+            <ContentControl Grid.Column="1"
+                            Content="{Binding CurrentPage}"
+                            Focusable="False" />
+        </Grid>
+    </Grid>
+</ui:FluentWindow>
